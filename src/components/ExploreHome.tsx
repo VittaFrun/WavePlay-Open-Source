@@ -1,0 +1,31 @@
+import { useMemo } from 'react';
+import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { Artwork } from './Artwork';
+import { useLibrary } from '../providers/WaveProvider';
+import { openRoute } from '../services/navigation';
+import { trackVideo } from '../utils/onlineTrack';
+import type { Track, YouTubeVideo } from '../types';
+import { fonts, useTheme } from '../theme';
+
+export function ExploreHome({onOpen,onQuery}:{onOpen:(video:YouTubeVideo)=>void;onQuery:(query:string)=>void}){
+ const {colors}=useTheme(),{tracks,recentlyPlayed,playlists}=useLibrary();
+ const recent=useMemo(()=>recentlyPlayed.filter(t=>t.youtubeId).slice(0,8),[recentlyPlayed]);
+ const favorites=useMemo(()=>tracks.filter(t=>t.youtubeId&&t.favorite).slice(0,8),[tracks]);
+ const featured=recent[0]||favorites[0];
+ const heading=(title:string,caption?:string)=><View style={s.heading}><Text style={[s.headingTitle,{color:colors.text}]}>{title}</Text>{caption?<Text style={[s.caption,{color:colors.muted}]}>{caption}</Text>:null}</View>;
+ const strip=(items:Track[])=><FlatList horizontal data={items} keyExtractor={t=>t.id} showsHorizontalScrollIndicator={false} initialNumToRender={4} windowSize={3} renderItem={({item})=><Pressable accessibilityRole="button" accessibilityLabel={`Escuchar ${item.title}`} onPress={()=>onOpen(trackVideo(item))} style={s.song}><View><Artwork uri={item.artwork} size={128}/><View style={s.smallPlay}><MaterialCommunityIcons name="play" size={18} color="#fff"/></View></View><Text numberOfLines={2} style={[s.songTitle,{color:colors.text}]}>{item.title}</Text><Text numberOfLines={1} style={[s.caption,{color:colors.muted}]}>{item.artist}</Text></Pressable>}/>;
+ return <View style={{paddingBottom:20}}>
+  <Pressable accessibilityRole="button" accessibilityLabel={featured?`Volver a escuchar ${featured.title}`:'Descubrir música en YouTube'} onPress={()=>featured?onOpen(trackVideo(featured)):onQuery('música para hoy')} style={s.hero}>
+   <LinearGradient colors={['#372542','#201D35','#182C32']} start={{x:0,y:0}} end={{x:1,y:1}} style={StyleSheet.absoluteFill}/>
+   <View style={s.heroCopy}><View style={s.eyebrow}><MaterialCommunityIcons name="youtube" size={17} color="#F0D0F3"/><Text style={s.kicker}>{featured?'OTRA VEZ EN REPEAT':'ENCUENTRA TU SONIDO'}</Text></View><Text numberOfLines={2} style={s.heroTitle}>{featured?featured.title:'Un mundo de música.\nTu próximo favorito.'}</Text><Text numberOfLines={1} style={s.heroCaption}>{featured?featured.artist:'Dale una nueva canción a tu día'}</Text><View style={s.heroAction}><MaterialCommunityIcons name={featured?'play':'arrow-top-right'} size={18} color="#19151F"/><Text style={s.heroActionText}>{featured?'Volver a escuchar':'Explorar música'}</Text></View></View>
+   <View pointerEvents="none" style={s.heroArt}>{featured?<Artwork uri={featured.artwork} size={100}/>:<View style={s.heroDisc}><View style={s.discRing}/><MaterialCommunityIcons name="music-note" size={30} color="#DBC4EC"/></View>}</View>
+  </Pressable>
+  {recent.length?<>{heading('Sigue escuchando','Las canciones a las que siempre vuelves')}{strip(recent)}</>:null}
+  {favorites.length?<>{heading('Tus imprescindibles','Favoritas de YouTube')}{strip(favorites)}</>:null}
+  {playlists.length?<>{heading('En tus playlists')}<FlatList horizontal data={playlists.slice(0,8)} keyExtractor={p=>String(p.id)} showsHorizontalScrollIndicator={false} renderItem={({item})=><Pressable accessibilityRole="button" onPress={()=>openRoute({pathname:'/playlist/[id]',params:{id:String(item.id)}})} style={[s.playlist,{backgroundColor:colors.surface2,borderColor:colors.border}]}><Artwork uri={item.artwork} size={56}/><Text numberOfLines={2} style={[s.songTitle,{color:colors.text}]}>{item.name}</Text><Text style={[s.caption,{color:colors.muted}]}>{item.trackCount||0} canciones</Text></Pressable>}/></>:null}
+
+ </View>;
+}
+const s=StyleSheet.create({hero:{marginTop:18,minHeight:204,borderRadius:24,overflow:'hidden',padding:20,flexDirection:'row',alignItems:'center',gap:10,borderWidth:1,borderColor:'rgba(232,206,255,.12)'},heroCopy:{flex:1,zIndex:1},eyebrow:{flexDirection:'row',alignItems:'center',gap:6},kicker:{color:'#E0CCE8',fontFamily:fonts.bold,fontSize:8,letterSpacing:1.4,flexShrink:1},heroTitle:{color:'#FBF5FF',fontFamily:fonts.extraBold,fontSize:23,lineHeight:29,marginTop:13,letterSpacing:-.6},heroCaption:{color:'#CEC3D8',fontFamily:fonts.regular,fontSize:11,marginTop:8},heroAction:{alignSelf:'flex-start',flexDirection:'row',alignItems:'center',gap:6,backgroundColor:'#E5D4EE',borderRadius:20,paddingHorizontal:13,paddingVertical:10,marginTop:17},heroActionText:{fontFamily:fonts.bold,fontSize:10,color:'#19151F'},heroArt:{width:100,transform:[{rotate:'9deg'}]},heroDisc:{width:100,height:100,borderRadius:50,backgroundColor:'#13101D',borderWidth:5,borderColor:'#50415D',alignItems:'center',justifyContent:'center'},discRing:{position:'absolute',width:68,height:68,borderWidth:1,borderColor:'#4B3C58',borderRadius:34},heading:{marginTop:26,marginBottom:13},headingTitle:{fontFamily:fonts.bold,fontSize:19,letterSpacing:-.4},caption:{fontFamily:fonts.regular,fontSize:10,lineHeight:16,marginTop:4},song:{width:128,marginRight:13},songTitle:{fontFamily:fonts.semiBold,fontSize:12,lineHeight:17,marginTop:9},smallPlay:{position:'absolute',bottom:8,right:8,width:28,height:28,borderRadius:14,backgroundColor:'rgba(19,19,26,.8)',alignItems:'center',justifyContent:'center'},moods:{flexDirection:'row',flexWrap:'wrap',gap:10},mood:{width:'48%',flexGrow:1,minHeight:114,borderRadius:17,padding:14},moodTitle:{fontFamily:fonts.bold,fontSize:13,marginTop:10},moodCaption:{fontFamily:fonts.regular,fontSize:9,color:'#D3CEDA',marginTop:4},moodArrow:{position:'absolute',top:16,right:13},playlist:{width:147,padding:14,marginRight:10,borderRadius:18,borderWidth:StyleSheet.hairlineWidth},historyHeading:{flexDirection:'row',alignItems:'flex-end',justifyContent:'space-between'},clear:{width:44,height:44,alignItems:'center',justifyContent:'center',marginBottom:4},query:{flexDirection:'row',alignItems:'center',gap:8,paddingHorizontal:13,minHeight:42,borderRadius:21,borderWidth:1,marginRight:8},queryText:{fontFamily:fonts.semiBold,fontSize:11}});

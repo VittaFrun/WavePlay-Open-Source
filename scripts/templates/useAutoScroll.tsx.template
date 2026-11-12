@@ -1,0 +1,24 @@
+// waveplay:frame-drag-autoscroll
+import { useCallback, useEffect } from 'react';
+import { runOnJS, scrollTo, useAnimatedReaction, useFrameCallback } from 'react-native-reanimated';
+import { useProps } from '../context/propsContext';
+import { useAnimatedValues } from '../context/animatedValueContext';
+import { useRefs } from '../context/refContext';
+import { dragScrollTarget } from './WavePlayAutoScroll';
+
+export function useAutoScroll(){
+ const {uiScrollRef}=useRefs();
+ const {autoscrollThreshold=100,autoscrollSpeed=520}=useProps();
+ const {scrollOffset,scrollViewSize,containerSize,activeCellSize,hoverOffset,activeIndexAnim,isTouchActiveNative,disabled,horizontalAnim}=useAnimatedValues();
+ const frame=useFrameCallback(info=>{
+  if(activeIndexAnim.value<0||!isTouchActiveNative.value||disabled.value)return;
+  const current=scrollOffset.value;
+  const target=dragScrollTarget(current,Math.max(0,scrollViewSize.value-containerSize.value),hoverOffset.value-current,activeCellSize.value,containerSize.value,autoscrollThreshold,autoscrollSpeed,info.timeSincePreviousFrame??16.67);
+  if(Math.abs(target-current)>.01)scrollTo(uiScrollRef,horizontalAnim.value?target:0,horizontalAnim.value?0:target,false);
+ },false);
+ const setActive=useCallback((active:boolean)=>frame.setActive(active),[frame]);
+ // Only gesture start/end crosses to JS; all scrolling stays on the UI thread.
+ useAnimatedReaction(()=>activeIndexAnim.value>=0&&isTouchActiveNative.value&&!disabled.value,(active,previous)=>{if(active!==previous)runOnJS(setActive)(active);},[setActive]);
+ useEffect(()=>()=>frame.setActive(false),[frame]);
+ return null;
+}

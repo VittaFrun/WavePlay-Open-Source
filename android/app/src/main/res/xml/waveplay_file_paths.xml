@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<paths xmlns:android="http://schemas.android.com/apk/res/android">
+  <cache-path name="waveplay_artwork" path="waveplay-artwork/" />
+  <files-path name="waveplay_artwork_persistent" path="waveplay-artwork/" />
+  <cache-path name="waveplay_updates" path="waveplay-updates/" />
+</paths>

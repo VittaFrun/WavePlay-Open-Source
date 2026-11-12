@@ -1,0 +1,56 @@
+# Learn more https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files
+
+# dependencies
+node_modules/
+
+# Expo
+.cache/
+credentials.json
+/credentials/
+.expo/
+dist/
+web-build/
+expo-env.d.ts
+
+# Native
+.kotlin/
+*.orig.*
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+
+# Metro
+.metro-health-check*
+
+# debug
+npm-debug.*
+yarn-debug.*
+yarn-error.*
+
+# macOS
+.DS_Store
+*.pem
+
+# local env files
+.env
+.env*.local
+.env.*
+!/.env.example
+
+# typescript
+*.tsbuildinfo
+
+# Native iOS project is generated; Android contains WavePlay's custom Kotlin modules.
+/ios
+
+# Local builds, signing material and temporary tools
+*.apk
+*.aab
+*.keystore
+*.log
+__pycache__/
+descargas-movil/
+.codex-apk-share/
+.codex-remote-attachments/

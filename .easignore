@@ -1,0 +1,32 @@
+# Dependencies and Expo caches are restored by EAS.
+node_modules/
+.expo/
+.cache/
+credentials.json
+credentials/
+.env
+.env.*
+
+# Local Android build outputs are reproducible in the EAS worker.
+android/.gradle/
+android/build/
+android/app/build/
+android/app/.cxx/
+android/.cxx/
+dist/
+.codex-apk-share/
+.codex-remote-attachments/
+descargas-movil/
+supabase/.temp/
+
+# Previous distributable builds must not become part of a new source archive.
+*.apk
+*.aab
+
+# Local tools, logs, and Python cache are not part of the app.
+__pycache__/
+*.log
+metro-*.log
+
+# Git metadata is not needed by this build.
+.git

@@ -1,0 +1,4 @@
+import { Pressable, StyleSheet, Text } from "react-native";
+import { fonts, radii, useTheme } from "../theme";
+export function WaveChip({label,selected=false,onPress}:{label:string;selected?:boolean;onPress?:()=>void}){const s=useS();return <Pressable accessibilityRole="button" accessibilityState={{selected}} onPress={onPress} style={({pressed})=>[s.root,selected&&s.on,pressed&&s.pressed]}><Text style={[s.text,selected&&s.textOn]}>{label}</Text></Pressable>}
+const useS = () => { const {colors} = useTheme(); return StyleSheet.create({root:{minHeight:40,paddingHorizontal:16,borderRadius:radii.pill,alignItems:'center',justifyContent:'center',backgroundColor:colors.surface3,borderWidth:1,borderColor:colors.border},on:{backgroundColor:colors.purpleStrong,borderColor:colors.purpleStrong},text:{fontFamily:fonts.semiBold,fontSize:13,color:colors.muted},textOn:{color:'#fff'},pressed:{opacity:.72}}); };

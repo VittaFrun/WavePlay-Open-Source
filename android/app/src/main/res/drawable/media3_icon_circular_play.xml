@@ -1,0 +1,4 @@
+<!-- Override the audio library's small notification icon with WavePlay's monochrome vector. -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+  <item android:drawable="@drawable/ic_waveplay_notification" />
+</layer-list>

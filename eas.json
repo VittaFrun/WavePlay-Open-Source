@@ -1,0 +1,25 @@
+{
+  "cli": {
+    "version": ">= 24.8.0",
+    "appVersionSource": "remote"
+  },
+  "build": {
+    "development": {
+      "environment": "preview",
+      "developmentClient": true,
+      "distribution": "internal",
+      "android": {
+        "gradleCommand": ":app:assembleDebug -PreactNativeArchitectures=arm64-v8a,x86_64 -PwaveplayDevUniversal=true"
+      },
+      "autoIncrement": true
+    },
+    "preview": {
+      "environment": "preview",
+      "distribution": "internal",
+      "android": {
+        "buildType": "apk"
+      },
+      "autoIncrement": true
+    }
+  }
+}

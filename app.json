@@ -1,0 +1,70 @@
+{
+  "expo": {
+    "name": "WavePlay",
+    "slug": "waveplay",
+    "version": "1.2.0",
+    "orientation": "portrait",
+    "icon": "./assets/waveplay-icon-new.png",
+    "userInterfaceStyle": "dark",
+    "scheme": "waveplay",
+    "plugins": [
+      "expo-router",
+      "expo-sharing",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/waveplay-splash-new.png",
+          "imageWidth": 240,
+          "resizeMode": "contain",
+          "backgroundColor": "#090A10"
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Elige una imagen para personalizar el fondo de WavePlay.",
+          "cameraPermission": false,
+          "microphonePermission": false
+        }
+      ],
+      [
+        "expo-audio",
+        {
+          "enableBackgroundPlayback": true,
+          "recordAudioAndroid": true
+        }
+      ],
+      [
+        "expo-media-library",
+        {
+          "photosPermission": "WavePlay necesita acceder a tu biblioteca de audio.",
+          "savePhotosPermission": "WavePlay necesita guardar las canciones descargadas.",
+          "granularPermissions": [
+            "audio"
+          ]
+        }
+      ],
+      "expo-sqlite"
+    ],
+    "ios": {
+      "supportsTablet": true
+    },
+    "android": {
+      "package": "com.waveplay.app",
+      "adaptiveIcon": {
+        "backgroundColor": "#090A10",
+        "foregroundImage": "./assets/waveplay-icon-new.png"
+      },
+      "predictiveBackGestureEnabled": true
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "experiments": {
+      "typedRoutes": true
+    },
+    "extra": {
+      "router": {}
+    }
+  }
+}

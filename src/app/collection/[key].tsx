@@ -1,0 +1,48 @@
+import { AppAlert as Alert } from '../../services/appAlert';
+import { FloatingMiniPlayer } from '../../components/FloatingMiniPlayer';
+import { TrackRemovalActions } from '../../components/TrackRemovalActions';
+import { TrackInfoAction } from '../../components/TrackInfoAction';
+import { BottomSheet } from '../../components/BottomSheet';
+import { LinearGradient } from 'expo-linear-gradient';
+import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { FastDraggableList, FastFlatList } from '../../components/FastScrollList';
+import { addedDays, addedGroups } from '../../utils/addedGroups';
+import { HeaderButton } from '../../components/HeaderButton';
+import { applyTrackOrder } from '../../utils/trackOrder';
+import { PlaylistHeading } from '../../components/PlaylistHeading';
+import { ThemeWallpaper } from '../../components/ThemeWallpaper';
+import { CollectionArtwork } from '../../components/PlaylistTile';
+import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { LibraryTrackRow } from '../../components/LibraryTrackRow';
+import { WaveEmptyState } from '../../components/WaveEmptyState';
+import { useLibrary, useWaveActions } from '../../providers/WaveProvider';
+import { smartCollections } from '../../services/collections';
+import { fonts, useTheme } from '../../theme';
+import type { PlaylistStats, Track } from '../../types';
+
+export default function CollectionScreen(){const {key}=useLocalSearchParams<{key:string}>();return <CollectionBody key={key} collectionRoute={key}/>;}
+function CollectionBody({collectionRoute:key}:{collectionRoute:string}){const {gradients,appearance}=useTheme();const s=useS();
+  const wave={...useLibrary(),...useWaveActions()};
+  const [manual,setManual]=useState(false);
+  const [reordering,setReordering]=useState(false);
+  const [order,setOrder]=useState<string[]>([]);const [ready,setReady]=useState(false);const [menuTrack,setMenuTrack]=useState<Track|null>(null);
+  useEffect(()=>{let mounted=true;void AsyncStorage.getItem(`waveplay.collection-order.${key}`).then(raw=>{if(mounted&&raw){const ids:unknown=JSON.parse(raw);if(Array.isArray(ids)){setOrder(ids.filter((id):id is string=>typeof id==='string'));setManual(true);}}}).catch(()=>{}).finally(()=>{if(mounted)setReady(true)});return()=>{mounted=false}},[key]);
+  const [stats,setStats]=useState<PlaylistStats|null>(null);
+  const getStats=wave.playlistStats;
+  const collection=useMemo(()=>smartCollections(wave.tracks,wave.recentlyPlayed).find(item=>item.key===key),[wave.tracks,wave.recentlyPlayed,key]);
+  const collectionKey=collection?.key;
+  const automatic=key!=='favorites';
+  const tracks=useMemo(()=>{const base=collection?.tracks||[];const ordered=automatic&&!manual?base:applyTrackOrder(base,order);return key==='recently-added'?addedGroups(ordered).flatMap(group=>group.tracks):ordered},[collection,order,automatic,manual,key]);
+  const day=new Date().setHours(0,0,0,0);
+  const headings=useMemo(()=>new Map(key==='recently-added'?addedGroups(tracks,day).map(group=>[group.tracks[0]?.id,group.title]):[]),[key,tracks,day]);
+  useFocusEffect(useCallback(()=>{if(!collectionKey)return;let active=true;void getStats(`smart:${collectionKey}`).then(result=>{if(active)setStats(result)}).catch(()=>{});return()=>{active=false};},[collectionKey,getStats]));
+  const renderRow=useCallback(({item}:{item:Track})=><View>{headings.has(item.id)?<Text style={s.groupTitle}>{headings.get(item.id)}</Text>:null}<LibraryTrackRow track={item} list={tracks} sourceKey={`smart:${key}`} playCount={key==='most-played'?(item.playCount||0):undefined} onMoreTrack={setMenuTrack}/></View>,[headings,key,s.groupTitle,tracks]);
+  if(!collection)return <SafeAreaView style={s.root}><ThemeWallpaper appearance={appearance}/><Pressable onPress={()=>router.back()}><Text style={s.backText}>Volver</Text></Pressable></SafeAreaView>;
+  const reorder=async(data:Track[])=>{const previous=order;const ids=data.map(track=>track.id);setOrder(ids);setManual(true);try{await AsyncStorage.setItem(`waveplay.collection-order.${key}`,JSON.stringify(ids));}catch{setOrder(previous);Alert.alert('No se guardó el orden','Inténtalo de nuevo.')}};
+  const heading=<PlaylistHeading title={collection.title} count={tracks.length} cover={<CollectionArtwork collectionKey={collection.key} size={104}/>} onShuffle={()=>{const first=tracks[Math.floor(Math.random()*tracks.length)];if(first)void wave.play(first,tracks,`smart:${collection.key}`,true)}} stats={stats??undefined} statsLoading={!stats} onPlay={()=>{if(tracks[0])void wave.play(tracks[0],tracks,`smart:${collection.key}`);}}/>;
+  return <LinearGradient colors={gradients.aurora} style={s.root}><ThemeWallpaper appearance={appearance}/><SafeAreaView style={s.safe} edges={['top']}><View style={s.top}><HeaderButton icon="arrow-left" label="Volver" onPress={()=>router.back()}/><Text style={[s.topLabel,{flex:1}]}>PLAYLIST</Text><HeaderButton icon={reordering?"check":"sort-variant"} label={reordering?"Terminar reordenamiento":"Reordenar canciones"} disabled={!ready||tracks.length<2} onPress={()=>setReordering(value=>!value)}/>{manual||(!automatic&&order.length)?<HeaderButton icon="sort-descending" label="Restaurar orden predeterminado" onPress={()=>{setManual(false);setOrder([]);void AsyncStorage.removeItem(`waveplay.collection-order.${key}`).catch(()=>Alert.alert('No se pudo restaurar el orden'))}}/>:null}</View>{reordering?<FastDraggableList data={tracks} containerStyle={{flex:1}} activationDistance={8} onDragEnd={({data,from,to})=>{if(key==='recently-added'&&tracks[from]&&tracks[to]&&addedDays(tracks[from])!==addedDays(tracks[to])){Alert.alert('Orden por fecha','Puedes reordenar canciones dentro del mismo día.');return}void reorder(data)}} keyExtractor={item=>item.id} contentContainerStyle={s.content} initialNumToRender={12} windowSize={7} ListHeaderComponent={heading} ListEmptyComponent={<WaveEmptyState title="Aún no hay canciones" message="Esta colección se llenará mientras usas WavePlay."/>} renderItem={({item,drag,isActive})=><View>{headings.has(item.id)?<Text style={s.groupTitle}>{headings.get(item.id)}</Text>:null}<LibraryTrackRow track={item} list={tracks} disabled={isActive} sourceKey={`smart:${collection.key}`} playCount={key==='most-played'?(item.playCount||0):undefined} onDrag={ready?drag:undefined} onMoreTrack={setMenuTrack}/></View>}/>:<FastFlatList<Track> data={tracks} keyExtractor={item=>item.id} contentContainerStyle={s.content} ListHeaderComponent={heading} ListEmptyComponent={<WaveEmptyState title="Aún no hay canciones" message="Esta colección se llenará mientras usas WavePlay."/>} renderItem={renderRow} initialNumToRender={12} maxToRenderPerBatch={8} windowSize={5} removeClippedSubviews={Platform.OS==='android'}/>}<FloatingMiniPlayer/><BottomSheet visible={Boolean(menuTrack)} onClose={()=>setMenuTrack(null)} title={menuTrack?.title||'Canción'}><Pressable style={{minHeight:54,justifyContent:'center'}} onPress={()=>{if(menuTrack)wave.addNext(menuTrack);setMenuTrack(null)}}><Text style={s.backText}>Reproducir después</Text></Pressable><Pressable style={{minHeight:54,justifyContent:'center'}} onPress={()=>{if(menuTrack)void wave.toggleTrackFavorite(menuTrack);setMenuTrack(null)}}><Text style={s.backText}>{menuTrack?.favorite?'Quitar de favoritas':'Añadir a favoritas'}</Text></Pressable><TrackInfoAction track={menuTrack} onClose={()=>setMenuTrack(null)}/><TrackRemovalActions track={menuTrack} onClose={()=>setMenuTrack(null)}/></BottomSheet></SafeAreaView></LinearGradient>;
+}
+const useS = () => { const {colors} = useTheme(); return useMemo(()=>StyleSheet.create({root:{flex:1,backgroundColor:colors.canvas},safe:{flex:1},content:{paddingHorizontal:14,paddingBottom:180},top:{height:60,flexDirection:'row',alignItems:'center',gap:15},back:{width:44,height:44,borderRadius:22,backgroundColor:colors.surface2,alignItems:'center',justifyContent:'center'},backText:{color:colors.text,padding:20},topLabel:{fontFamily:fonts.bold,fontSize:11,letterSpacing:0,color:colors.muted},hero:{flexDirection:'row',alignItems:'center',gap:16,marginTop:22},heroCopy:{flex:1},title:{fontFamily:fonts.extraBold,fontSize:25,lineHeight:31,color:colors.text},subtitle:{fontFamily:fonts.regular,fontSize:12,color:colors.muted,marginTop:7},groupTitle:{fontFamily:fonts.bold,fontSize:12,color:colors.muted,paddingTop:22,paddingBottom:8},activity:{fontFamily:fonts.regular,fontSize:11,color:colors.muted,marginTop:18},actions:{marginTop:16,marginBottom:18,flexDirection:'row'},play:{height:50,paddingHorizontal:25,borderRadius:25,overflow:'hidden',flexDirection:'row',alignItems:'center',gap:7},playText:{fontFamily:fonts.bold,color:'#fff',fontSize:13}}),[colors]); };
